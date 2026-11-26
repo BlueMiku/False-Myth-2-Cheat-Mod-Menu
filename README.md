@@ -10,16 +10,15 @@ Press **Insert** (keyboard) or hold **L3 + R3** (controller) on the field and a 
 
 | Page | What it does |
 |---|---|
-| **Currency & items** | +AP, +Linel, lottery tickets, casino coins and meal tickets (the last two are not yet tested in play), and a **custom amount** editor (add or subtract any number; hold Left/Right to repeat) |
+| **Currency & items** | +AP, +Linel, lottery tickets, casino coins and meal tickets , and a **custom amount** editor |
 | **Time** | Set the time-of-day slot, step it forward or back, freeze time, start a new day (resets daily limits) |
 | **Unlocks** | World map, Wechina tour, Linel circle, assassin display, subjugation challenge, scene unlock flags |
-| **Floor-skip flags** | The 50F / 70F / 100F dungeon skip flags (untested until the dungeons are unlocked) |
+| **Floor-skip flags** | The 50F / 70F / 100F dungeon skip flags |
 | **Map zoom** | 100 to 300 %, and it stays when you change map |
-| **Move speed** | Walking speed 2 to 8 (patched into the game's walking event) |
+| **Move speed** | Walking speed 2 to 8 |
 | **Warp to map** | 41 destinations with proper arrival points; Left/Right flips pages |
 | **Party, items & shop** | Give any of 188 pieces of equipment (browse everything, filter by type, find by first letter, or **live search by typing**), set the love level of each heroine, learn all skills, make every shop perk purchasable |
 
-Quality-of-life details: full keyboard **and** controller navigation, every action shows a "Done: ..." message with the new value, the game is frozen and all other input is blocked while the menu is open, and closing the menu doesn't leak the keypress into the game.
 
 ## How it works
 
@@ -33,7 +32,7 @@ Wolf RPG games keep their logic in *common events*: small scripts stored in `Dat
    - *search events*: scan all 188 item names for the live search
 4. **Input.** The engine's unified "basic input" gives up/down/left/right/confirm/cancel for keyboard and pad; specific-key reads handle Insert and the search typing; `BanInput` freezes the field while the menu is open.
 5. **Live search.** There is no text-input command that suits this, so the menu reads about 40 individual keys each frame, keeps up to 8 typed characters in spare variables, rebuilds a string, and filters names by removing the typed text from each lowercase name and checking whether the name changed.
-6. **Data discovery.** Cheats write the game's own variables and runtime databases (found by decoding the dumped databases and event scripts), and equipment is given by calling the game's pickup event, so inventory and effects behave normally.
+6. **Data discovery.** Cheats write the game's own variables and runtime databases, and equipment is given by calling the game's pickup event, so inventory and effects behave normally.
 
 ## Written in
 
@@ -73,11 +72,9 @@ NOTES.md, PLAN.md     working notes and the original plan
 ## Status and limitations
 
 - Works on the field only. Dungeons and battles don't open the menu yet.
-- Untested in play: casino coins, meal tickets and the floor-skip flags (the related content isn't unlocked on the author's save).
-- Typing search is keyboard only.
-- Built for game version 1.21; an update needs a rebuilt package.
+- Built for game version 1.21.
 
-Work in progress ideas: unlocking allies, the scene album and the encyclopedias, a dungeon and battle menu, and a save editor.
+Work in progress: unlocking allies, the scene album and the encyclopedias, a dungeon and battle menu, and a save editor.
 
 ## Credits
 
