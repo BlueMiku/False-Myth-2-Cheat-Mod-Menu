@@ -17,3 +17,7 @@
 ScreenShot*.png
 README.txt
 !/tools/package/README.txt
+
+# local working notes (kept on disk, not published)
+/NOTES.md
+/PLAN.md

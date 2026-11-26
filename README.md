@@ -66,7 +66,6 @@ tools/testbed/        helper for driving a test copy of the game
 tools/build-mod.ps1   generate + deploy the mod
 tools/make-package.ps1
 docs/                 findings: variable map, time system, cheat menu design and test notes
-NOTES.md, PLAN.md     working notes and the original plan
 ```
 
 ## Status and limitations
