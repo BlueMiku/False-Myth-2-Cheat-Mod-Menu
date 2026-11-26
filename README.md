@@ -42,7 +42,7 @@ Wolf RPG games keep their logic in *common events*: small scripts stored in `Dat
 
 ## Install (end users)
 
-Build the package (see below) or get a prebuilt `package/` folder, close the game, then run `install.bat` from it. `uninstall.bat` restores the original files. Saves are never touched. The installer refuses if the game's archives don't match version 1.21 (the mod replaces whole data files, so a mismatched version could break things).
+Download `FM2-Cheat-Mod-Patcher-<version>.zip` from the Releases page, unzip it, close the game and double-click `Install.bat`. The patcher contains **no game data**: it finds your Steam copy of the game, checks that the three data archives are the 1.21 versions, unpacks them to a temp folder, builds the modded data from your own files (about 10 seconds) and installs it. `Uninstall.bat` puts the original files back. Saves are never touched. If the archives are a different version the patcher refuses, because the mod replaces whole data files.
 
 ## Build from source
 
@@ -52,7 +52,7 @@ You need your own installed copy of the game (Windows), MinGW-w64 `g++` and `gcc
 2. Clone [WolfTL](https://github.com/Sinflower/WolfTL) into `work/wolftl-src` and dump the data (`WolfTL.exe --create ...`) into `work/wolftl/dump` for the `tools/gen_*.py` scripts.
 3. `tools/fm2mod/build.ps1` builds `fm2mod.exe`.
 4. `tools/build-mod.ps1` generates `mod/Data/BasicData/CommonEvent.dat` (add `-Deploy` to copy it into a test copy of the game).
-5. `tools/make-package.ps1` assembles `package/` with the installer.
+5. `tools/make-package.ps1` assembles `package/` (a local prebuilt package, never published: it contains game data), and `tools/make-release.ps1` builds the publishable patcher zip in `dist/`.
 
 The scripts contain absolute paths at the top (`F:\Personal Projjects\FM2`, the Steam folder); change them to match your machine. `tools/validate_events.py` checks generated events offline (balanced blocks, valid variable ids).
 
@@ -60,7 +60,7 @@ The scripts contain absolute paths at the top (`F:\Personal Projjects\FM2`, the 
 
 ```
 tools/fm2mod/         generator (fm2mod.cpp, evbuilder.hpp, generated *.inc tables, build.ps1)
-tools/package/        installer script and player README
+tools/package/        installer/patcher script, release README, third-party license texts
 tools/*.py            table generators, validator, database decoder
 tools/testbed/        helper for driving a test copy of the game
 tools/build-mod.ps1   generate + deploy the mod
