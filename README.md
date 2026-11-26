@@ -12,7 +12,7 @@ Press **Insert** (keyboard) or hold **L3 + R3** (controller) on the field and a 
 |---|---|
 | **Currency & items** | +AP, +Linel, lottery tickets, casino coins and meal tickets , and a **custom amount** editor |
 | **Time** | Set the time-of-day slot, step it forward or back, freeze time, start a new day (resets daily limits) |
-| **Unlocks** | World map, Wechina tour, Linel circle, assassin display, subjugation challenge, scene unlock flags |
+| **Unlocks** | World map, Wechina tour, Linel circle, assassin display, subjugation challenge, scene unlock flags, and **unlock all album scenes** |
 | **Floor-skip flags** | The 50F / 70F / 100F dungeon skip flags |
 | **Map zoom** | 100 to 300 %, and it stays when you change map |
 | **Move speed** | Walking speed 2 to 8 |
@@ -73,7 +73,7 @@ docs/                 findings: variable map, time system, cheat menu design and
 - Works on the field only. Dungeons and battles don't open the menu yet.
 - Built for game version 1.21.
 
-Work in progress: unlocking allies, the scene album and the encyclopedias, a dungeon and battle menu, and a save editor.
+Work in progress: unlocking allies and the encyclopedias, a dungeon and battle menu, and a save editor.
 
 ## Credits
 
