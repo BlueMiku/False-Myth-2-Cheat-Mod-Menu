@@ -1,0 +1,19 @@
+# Game data, backups and anything derived from the game stay local (copyrighted)
+/backup/
+/extracted/
+/testbed/
+/mod/
+/package/
+/work/
+/tools/UberWolf/
+/tools/WolfTL/
+
+# Build output, binaries, saves, screenshots
+*.exe
+*.dll
+*.o
+*.wolf
+*.sav
+ScreenShot*.png
+README.txt
+!/tools/package/README.txt
