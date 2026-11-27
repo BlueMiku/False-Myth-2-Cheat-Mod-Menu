@@ -25,3 +25,5 @@ README.txt
 /patch_target/
 /FalseMyth2_Patch_*/
 /patch_capture/
+/patch_capture_*/
+/patch_install*.log
