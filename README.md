@@ -66,7 +66,9 @@ tools/package/        installer/patcher script, release README, third-party lice
 tools/*.py            table generators, validator, database decoder
 tools/testbed/        helper for driving a test copy of the game
 tools/build-mod.ps1   generate + deploy the mod
-tools/make-package.ps1
+tools/make-package.ps1   local prebuilt package (contains game data, never published)
+tools/make-release.ps1   builds the publishable patcher zip
+tools/snapshot-game.ps1, tools/compat_check.py   diff a game folder; compare patched vs stock data
 docs/                 findings: variable map, time system, cheat menu design and test notes
 ```
 

@@ -95,7 +95,7 @@ Main menu -> **Party, items & shop**:
 - **Shop: make every perk purchasable:** CDB 6 "Sebas shop owned count", field 1 "purchasable?" = 1 for all 46 named perks (UserDB 33: Max SP +1, Overkiller, Healing Mastery, Equip Slots +1, tomes, fishing perks, lucky cats ...).
 - Back/Cancel now go to the page's parent (equipment/love -> Party hub, custom amount -> Currency, others -> main).
 - How Database writes are built: `Database [type, item, field, packed, value]`, packed = (7<<16) [type/item/field constants] | (0<<8) [runtime DB, write] | (op<<4); verified against the game's own constant writes (packed 458752). `tools/dbdecode.py <eventId>` prints any event's Database commands readably.
-- Not done: **allies** (events 858/860/880 are gacha/bonus-ally flows with their own state), **scene album & encyclopedia** (CDB 31 turned out to be casino-only; the real unlock storage is not found yet).
+- Not done: **allies** (events 858/860/880 are gacha/bonus-ally flows with their own state; the owned-flag location is not found yet), **fish encyclopedia** (CDB 19; fields written by event 598 not decoded). The scene album is done, see Round 13.
 
 ## Casino anti-cheat variable (V2900019 "★カジノ不正防止") — findings
 The only reference in the whole data (942 common events + 122 maps) is `SetVariable [2900019, 1800]` in event 566 (load processing). Nothing reads it: no condition, no calculation, no text code, no indirect/range access. 1800 frames = 30 seconds at 60 fps, so it looks like a leftover "after loading a save, casinos are locked for 30 s" timer whose check was removed or never written. Caveat: absence in the event data isn't proof about the engine, and the casino games themselves haven't been run.
@@ -109,7 +109,7 @@ The only reference in the whole data (942 common events + 122 maps) is `SetVaria
 - Event 934 grew to ~12,000 commands (event 123 in the game has 5,000+); only the current page's block runs each frame.
 - Equipment name cleanup now strips `\f[16]\-[02]`-style text codes (they leaked into a few names before).
 
-## Round 11 — live equipment search (2026-11-26) — UNTESTED
+## Round 11 — live equipment search (2026-11-26) — works (after the comparison-op fix below)
 Door in the equipment hub: **Search by typing (live, keyboard)**. Shows every item at first; each key press filters the list on the fly.
 - Keys read each frame by event 937 (`InputKey [var,4352,100+DIK]`): A-Z, 0-9, space, `-`, `'`; Backspace erases one character, Delete clears; max 8 characters (key codes kept in 8 spare variables, count in V2000082, text rebuilt into string var 3000021).
 - Event 935 (refresh): scans all 188 names (unrolled). Match = text empty, or "remove every occurrence of the typed text from the lowercase name" changes the name (SetString op 8 on a copy in string var 3000022, then StringCondition !=). Draws the matches in the window starting at OFFS (11 rows per page) as pictures; MC = match count, RC = rows shown.
@@ -122,5 +122,12 @@ Door in the equipment hub: **Search by typing (live, keyboard)**. Shows every it
 ### Round 11 fixes (after first test)
 - Both reported bugs had one cause: in this engine, VariableCondition op 0 behaves as a STRICT ">" (not "≥"). `K0 >= 1` hid rank 1, and `TN >= n` made the typed text lag one key behind. Op 3 (<=) was confirmed inclusive. New code avoids op 0/1 boundaries: the typed text is rebuilt from the 8 slots (unused = 0), cursor wrapping uses ==, rank test is `K0 > 0`. NOTE: `ifOp(.., 0, ..)` means ">" ; `ifGt` (op 1) is probably ">=" — only used where the difference doesn't matter.
 
-## Round 12 — action feedback toast (2026-11-26) — untested
+## Round 12 — action feedback toast (2026-11-26) — confirmed working by the user
 Every cheat row now shows a line under the help text for ~2.5 s (150 frames): "Done: <row text>" plus the new value where useful (AP / Linel / casino coins / meal tickets / lottery tickets / time slot / freeze state / custom amount / step). Equipment rows and the search "give" show "Done: <id> <name>". Navigation rows (">" / "<" / Next page / Close menu / warp targets) give none. Picture 99917 (PIC_TOAST), timer variable V2200013 (FB); close() erases it. Implemented generically in `toastFor()` in fm2mod.cpp (Row.nofb opts a row out).
+
+## Round 13 — scene album and the publisher full-version patch (2026-11-27)
+**Album unlock.** Album screens 825/842 read CDB 31 item n field 0 ("seen", n = 1..45) from the COMMON save slot 101 (`SaveData101.sav`) with command 221 `[var, 101, pointer, 1]`; each scene event writes its flag with command 222 (SaveGame) `[1, 101, 1131000000 + n*100, 0]`. Pointer format: `1,1TT,0000,00` is CDB type TT (`1,0TT` is a user DB type), plus item*100 plus field. The Unlocks page row "Unlock all album scenes (1-45)" emits 45 such commands. Not yet confirmed in play. Backups of the original slot 101: `backup/saves_*` and `Save_MTool`.
+
+**Publisher full-version patch (en 20261119).** An Inno Setup installer (PatchWorker, Python) that checks the stock archives against a manifest, then replaces 22 archives (Back, BasicData, BattlePic, CharaChip, MapData, Picture, face, 16 cv* voice archives), deletes `CG.wolf` and adds `HCG.wolf`. The earlier 20261109 patch does NOT match the current Steam build (26781484). The patch refuses to run while the mod is installed (archives moved), so the order is: uninstall mod -> patch -> install mod. The patcher recognizes both game states by archive SHA256 ("profiles" in package.json) and builds the mod from the installed one; `tools/compat_check.py` compares a patched dump with stock for everything the mod depends on (events 120/122/124/197/556/582 numerically identical, only translation wording differs; all reusable slots blank; no new references to the mod's variables; databases identical; 40 of 41 warp targets still present as teleports). Confirmed in play: menu works and H scenes still show.
+
+**Tools added.** `tools/snapshot-game.ps1` (hash snapshot + diff of a game folder), `tools/compat_check.py`, `tools/make-release.ps1` (patcher zip with no game data).
