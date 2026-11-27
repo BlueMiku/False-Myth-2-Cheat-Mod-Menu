@@ -10,6 +10,14 @@ Install
      (it finds the game by itself; if it can't, paste the game folder, the one that contains Game.exe).
   3. Wait about a minute while it builds. Start the game from Steam as usual.
 
+Works with the publisher's full-version (H) patch
+  Supported game states: the stock Steam files (build 26781484) and the stock files plus the publisher's
+  "False Myth 2 English Full Version Patch" dated 20261119. The installer detects which one you have and builds the mod
+  from it, so the patch's content stays in the game.
+  Order matters: the publisher's patch refuses to install while this mod is installed (the original archives are moved away).
+  To apply or update the patch:  Uninstall.bat  ->  run the publisher's patch  ->  Install.bat.
+  If you have a different patch version, the installer refuses (it only knows the exact files listed above).
+
 Uninstall
   Double-click  Uninstall.bat   - the original game files are put back. Your saves are never touched.
   If Steam "Verify integrity" restores the original files, just run Install.bat again.

@@ -44,6 +44,8 @@ Wolf RPG games keep their logic in *common events*: small scripts stored in `Dat
 
 Download `FM2-Cheat-Mod-Patcher-<version>.zip` from the Releases page, unzip it, close the game and double-click `Install.bat`. The patcher contains **no game data**: it finds your Steam copy of the game, checks that the three data archives are the 1.21 versions, unpacks them to a temp folder, builds the modded data from your own files (about 10 seconds) and installs it. `Uninstall.bat` puts the original files back. Saves are never touched. If the archives are a different version the patcher refuses, because the mod replaces whole data files.
 
+**Works with the publisher's full-version patch.** The patcher supports the stock Steam 1.21 files and the stock files plus the publisher's English Full Version Patch (20261119); it detects which one is installed and builds the mod from it, so the patch's content is kept. The publisher's patch won't install while the mod is installed, so run `Uninstall.bat` first, patch, then `Install.bat` again.
+
 ## Build from source
 
 You need your own installed copy of the game (Windows), MinGW-w64 `g++` and `gcc`, Python 3 and PowerShell.
