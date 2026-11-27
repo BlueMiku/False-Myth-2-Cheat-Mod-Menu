@@ -17,10 +17,16 @@ Copy-Item "$fm\work\wolftl-src\bin\WolfTL.exe" "$rel\tools\"
 Copy-Item "$fm\tools\package\licenses\*" "$rel\licenses\"
 Copy-Item "$fm\tools\package\fm2-install.ps1" $rel
 Copy-Item "$fm\tools\package\RELEASE-README.txt" "$rel\README.txt"
-$arch = [ordered]@{}
-foreach ($n in $names) { $p = "$fm\backup\Data\$n.wolf"; $arch[$n] = [ordered]@{ size = (Get-Item $p).Length; sha256 = (Get-FileHash -Algorithm SHA256 $p).Hash } }
-[ordered]@{ version = $Version; builtAt = (Get-Date).ToString('s'); gameVersion = '1.21'; commonEventSha256 = (Get-FileHash -Algorithm SHA256 $ce).Hash; archives = $arch } |
-	ConvertTo-Json -Depth 4 | Set-Content "$rel\package.json" -Encoding UTF8
+# supported game states ("profiles"): archive checksums + the CommonEvent.dat the generator produces for them
+function New-Profile([string]$name, [string]$archDir, [string]$ceFile) {
+	$arch = [ordered]@{}
+	foreach ($n in $names) { $p = "$archDir\$n.wolf"; if (-not (Test-Path $p)) { throw "missing $p" }; $arch[$n] = [ordered]@{ size = (Get-Item $p).Length; sha256 = (Get-FileHash -Algorithm SHA256 $p).Hash } }
+	[ordered]@{ name = $name; archives = $arch; commonEventSha256 = (Get-FileHash -Algorithm SHA256 $ceFile).Hash }
+}
+$fullCe = "$fm\work\full_unpack\CommonEvent_mod.dat"      # generator output for the patched archives (see tools\compat_check.py)
+$profiles = @(New-Profile 'stock Steam 1.21 (build 26781484)' "$fm\backup\Data" $ce)
+if (Test-Path $fullCe) { $profiles += New-Profile 'Steam 1.21 + publisher full-version patch (en 20261119)' "$fm\work\full_unpack\Data" $fullCe }
+[ordered]@{ version = $Version; builtAt = (Get-Date).ToString('s'); gameVersion = '1.21'; profiles = $profiles } | ConvertTo-Json -Depth 6 | Set-Content "$rel\package.json" -Encoding UTF8
 Set-Content "$rel\Install.bat" "@echo off`r`npowershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0fm2-install.ps1`" -Action Install`r`npause" -Encoding ASCII
 Set-Content "$rel\Uninstall.bat" "@echo off`r`npowershell -NoProfile -ExecutionPolicy Bypass -File `"%~dp0fm2-install.ps1`" -Action Uninstall`r`npause" -Encoding ASCII
 $zip = "$dist\FM2-Cheat-Mod-Patcher-$Version.zip"

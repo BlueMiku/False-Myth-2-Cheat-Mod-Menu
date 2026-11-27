@@ -17,6 +17,9 @@ $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $pkgData = Join-Path $here 'Data'          # present in a prebuilt package; absent in the patcher release, which builds it from the player's own game files
 $pkg = Get-Content (Join-Path $here 'package.json') -Raw | ConvertFrom-Json
+# supported game states ("profiles"): the stock Steam archives, and the stock archives after the publisher's full-version patch. Each lists the SHA256 of the 3 archives it applies to
+# and of the CommonEvent.dat the tested build produces for them.
+$profiles = if ($pkg.profiles) { @($pkg.profiles) } else { @([pscustomobject]@{ name = 'stock'; archives = $pkg.archives; commonEventSha256 = $pkg.commonEventSha256 }) }
 
 # --- find the game: Steam registry path + libraryfolders.vdf; otherwise ask
 function Find-Game {
@@ -54,6 +57,15 @@ function Say($m) { Write-Host $m }
 function Run($desc, [scriptblock]$sb) { if ($DryRun) { Say "[dry-run] $desc" } else { Say $desc; & $sb } }
 function Sha($p) { (Get-FileHash -Algorithm SHA256 -LiteralPath $p).Hash }
 function Fail($m) { Write-Host "ERROR: $m" -ForegroundColor Red; exit 1 }
+# which supported game state do the 3 archives in $dir match? ($null if none)
+function Match-Profile([string]$dir) {
+	foreach ($p in $profiles) {
+		$ok = $true
+		foreach ($n in $names) { $a = Join-Path $dir "$n.wolf"; if (-not (Test-Path -LiteralPath $a) -or (Sha $a) -ne $p.archives.$n.sha256) { $ok = $false; break } }
+		if ($ok) { return $p }
+	}
+	return $null
+}
 
 if (-not (Test-Path (Join-Path $GameDir 'Game.exe'))) { Fail "Game.exe not found in $GameDir" }
 $installed = Test-Path $manifestPath
@@ -68,7 +80,7 @@ if ($Action -eq 'Status') {
 		Say ("  {0,-11} archive in Data: {1,-5}  loose folder: {2,-5}  archive in backup: {3}" -f $n, (Test-Path $arc), (Test-Path $loose), (Test-Path $b))
 	}
 	$ce = Join-Path $data 'BasicData\CommonEvent.dat'
-	if (Test-Path $ce) { Say ("CommonEvent.dat matches this package: {0}" -f ((Sha $ce) -eq $pkg.commonEventSha256)) }
+	if (Test-Path $ce) { $h = Sha $ce; $mp = $profiles | Where-Object { $_.commonEventSha256 -eq $h } | Select-Object -First 1; Say ("CommonEvent.dat matches this package: {0}" -f ($null -ne $mp)); if ($mp) { Say "  built for game state: $($mp.name)" } }
 	if ($installed) { Say "Installed at: $($manifest.installedAt)" }
 	exit 0
 }
@@ -78,7 +90,7 @@ if (Get-Process Game -ErrorAction SilentlyContinue) { Fail 'Game.exe is running 
 # --- patcher mode: build the modded loose folders from the player's own archives (nothing from the game ships with this tool).
 # Pipeline (byte-identical to the data that was tested in play): UberWolf unpacks the 3 archives -> WolfTL rewrites the databases/maps (round trip) ->
 # fm2mod replaces CommonEvent.dat with the generated cheat-menu version. Work happens in a temp folder; the game folder is not touched here.
-function Build-Mod([string]$srcDir) {
+function Build-Mod([string]$srcDir, [string]$expectedCe) {
 	$uber = Join-Path $here 'tools\UberWolfCli.exe'; $wolftl = Join-Path $here 'tools\WolfTL.exe'; $fm2mod = Join-Path $here 'tools\fm2mod.exe'
 	foreach ($t in $uber, $wolftl, $fm2mod) { if (-not (Test-Path -LiteralPath $t)) { Fail "missing tool: $t" } }
 	$work = Join-Path $env:TEMP ('fm2-build-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -103,7 +115,7 @@ function Build-Mod([string]$srcDir) {
 	& $fm2mod build-probe (Join-Path $in 'Data\BasicData\CommonEvent.dat') (Join-Path $out 'BasicData\CommonEvent.dat') MENU1 | Out-Null
 	if ($LASTEXITCODE -ne 0) { Fail 'generating the cheat menu failed' }
 	$ceHash = Sha (Join-Path $out 'BasicData\CommonEvent.dat')
-	if ($ceHash -ne $pkg.commonEventSha256 -and -not $Force) { Fail "the generated CommonEvent.dat does not match the tested build ($ceHash). Not installing (-Force overrides)." }
+	if ($ceHash -ne $expectedCe -and -not $Force) { Fail "the generated CommonEvent.dat does not match the tested build ($ceHash). Not installing (-Force overrides)." }
 	foreach ($d in 'in', 'dump') { Remove-Item -LiteralPath (Join-Path $work $d) -Recurse -Force -ErrorAction SilentlyContinue }
 	return $out
 }
@@ -113,13 +125,15 @@ if ($Action -eq 'Install') {
 	if (-not (Test-Path -LiteralPath $pkgData)) {
 		# patcher mode: verify the source archives first (from Data on a fresh install, from the backup when updating), then build
 		$srcDir = if ($installed) { $bak } else { $data }
-		foreach ($n in $names) {
-			$a = Join-Path $srcDir "$n.wolf"
-			if (-not (Test-Path -LiteralPath $a)) { Fail "$a not found (is the game already modded by something else?)" }
-			if ((Sha $a) -ne $pkg.archives.$n.sha256 -and -not $Force) { Fail "$n.wolf is not the version this patcher was built for (game updated?). Look for a newer patcher release, or use -Force at your own risk." }
+		foreach ($n in $names) { if (-not (Test-Path -LiteralPath (Join-Path $srcDir "$n.wolf"))) { Fail "$(Join-Path $srcDir "$n.wolf") not found (is the game already modded by something else?)" } }
+		$prof = Match-Profile $srcDir
+		if (-not $prof) {
+			if (-not $Force) { Fail 'These game archives are not a version this patcher supports (the stock Steam files, or the stock files plus the publisher full-version patch). If you applied a different patch version, or the game was updated, look for a newer patcher release; -Force overrides at your own risk.' }
+			$prof = $profiles[0]
 		}
+		Say "Detected game state: $($prof.name)"
 		if ($DryRun) { Say '[dry-run] would unpack the archives and build the mod in a temp folder'; $pkgData = Join-Path $here 'Data' }
-		else { $pkgData = Build-Mod $srcDir; $builtTemp = Split-Path -Parent $pkgData }
+		else { $pkgData = Build-Mod $srcDir $prof.commonEventSha256; $builtTemp = Split-Path -Parent $pkgData }
 	}
 	foreach ($n in $names) { if (-not $DryRun -and -not (Test-Path -LiteralPath (Join-Path $pkgData $n))) { Fail "package is missing Data\$n" } }
 	if (-not $installed) {
@@ -128,9 +142,8 @@ if ($Action -eq 'Install') {
 			$arc = Join-Path $data "$n.wolf"
 			if (-not (Test-Path $arc)) { Fail "$arc not found (is the game already modded by something else?)" }
 			if (Test-Path (Join-Path $data $n)) { Fail "Data\$n already exists and was not created by this tool - not touching it." }
-			$h = Sha $arc
-			if ($h -ne $pkg.archives.$n.sha256 -and -not $Force) { Fail "$n.wolf is not the version this mod was built for (game updated?). Rebuild the package, or use -Force at your own risk." }
 		}
+		if (-not (Match-Profile $data) -and -not $Force) { Fail 'These game archives are not a version this package was built for. Rebuild the package, or use -Force at your own risk.' }
 		Run "create backup folder $bak" { New-Item -ItemType Directory -Path $bak | Out-Null }
 		$files = @()
 		foreach ($n in $names) {
